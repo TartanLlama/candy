@@ -208,7 +208,7 @@ function finish_cooking(menu_id)
     -- use up a bottle, a brick, 50bl honey
     api_slot_decr(api_get_slot(menu_id, 1)["id"])
     api_slot_decr(api_get_slot(menu_id, 2)["id"])
-    --api_sp(menu_id, api_gp(menu_id, "tank_amount") - HONEY_REQUIRED)
+    api_sp(menu_id, "tank_amount", api_gp(menu_id, "tank_amount") - HONEY_REQUIRED)
 end
 
 function is_cooking(menu_id)
