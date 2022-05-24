@@ -1,15 +1,11 @@
--- MASSIVE HACK: keep track of most recently highlighted menu
--- to work out to which menu a button belongs
-MOST_RECENT_CANDY_MENU = 0
-
-DEV_MODE = true     -- Enable developer console or not
-HONEY_REQUIRED = 50 -- How much honey needed per candy
-TICK_RATE = 0.01    -- How much to tick every frame (0.01 = 10s per candy) 
+DEV_MODE = false     -- Enable developer console or not
+HONEY_REQUIRED = 50  -- How much honey needed per candy
+TICK_RATE = 0.001    -- How much to tick every frame (0.01 = 10s per candy) 
 
 function register()
     return {
         name = "candy",
-        hooks = {"step"}
+        hooks = {}
     }
 end
 
@@ -92,16 +88,6 @@ function define_candy()
         shop_sell = 20,
         placeable = false
     }, "sprites/candy3_item.png")
-end
-
--- MASSIVE HACK: keep track of most recently highlighted candy bench
-function step()
-    local highlighted = api_get_inst(api_get_highlighted("menu"))
-    if highlighted ~= nil then
-        if highlighted["oid"] == "candy_candy_bench" then
-            MOST_RECENT_CANDY_MENU = highlighted["id"]
-        end
-    end
 end
 
 function init()
@@ -215,11 +201,7 @@ function is_cooking(menu_id)
     return api_gp(menu_id, "cooking")
 end
 
-function cook_button_click()
-    -- MASSIVE HACK: retrive the most recently highlighted candy menu
-    -- this is most likely the one which this button corresponds to
-    local menu_id = MOST_RECENT_CANDY_MENU
-
+function cook_button_click(menu_id)
     if is_cooking(menu_id) then
         finish_cooking(menu_id)
     else
