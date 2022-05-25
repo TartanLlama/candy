@@ -174,7 +174,7 @@ end
 function has_all_inputs(menu_id)
     local have_bottle = api_get_slot(menu_id, 1)["item"] == "bottle"
     local have_brick = api_get_slot(menu_id, 2)["item"] == "sawdust2"
-    local have_honey = api_gp(menu_id, "tank_amount") > HONEY_REQUIRED
+    local have_honey = api_gp(menu_id, "tank_amount") >= HONEY_REQUIRED
 
     return have_bottle and have_brick and have_honey
 end
