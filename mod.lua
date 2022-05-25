@@ -151,7 +151,7 @@ function init()
     define_candy_bench()
     define_candy()
     
-    api_define_sprite("cooking_button", "sprites/cooking_button.png", 1)
+    api_define_sprite("cooking_button", "sprites/cooking_button.png", 2)
     api_define_sprite("candy_bench_tooltip", "sprites/candy_bench_tooltip.png", 1)
     api_define_sprite("candy_bench_cooking", "sprites/candy_bench_cooking.png", 4)
 
@@ -231,11 +231,16 @@ function candy_bench_draw(menu_id)
     api_draw_tank(api_gp(menu_id, "tank_gui"))
     api_draw_button(api_gp(menu_id, "cook_button"), true)
 
-    if api_gp(menu_id, "cooking") then
+    if is_cooking(menu_id) then
         -- Make it look like the pot is cooking, how cute!
         local button_sprite = api_get_sprite("sp_cooking_button")
         local sprite_pos = local_pos_to_global(menu_id, {["x"] = 51, ["y"] = 61})
-        api_draw_sprite(button_sprite, 1, sprite_pos["x"], sprite_pos["y"])
+
+        if api_get_counter("cooking_counter") == 0 then
+            api_draw_sprite(button_sprite, 0, sprite_pos["x"], sprite_pos["y"])
+        else
+            api_draw_sprite(button_sprite, 1, sprite_pos["x"], sprite_pos["y"])
+        end 
 
         -- Draw a white line at the current gauge position
         local gauge_pos = local_pos_to_global(menu_id, get_gauge_pos_local(menu_id))
@@ -250,18 +255,25 @@ function candy_bench_reset(menu_id)
     api_sp(menu_id, "p_start", 0)
 end
 
-function finish_cooking(menu_id)
-    produce_candy(menu_id)
-    candy_bench_reset(menu_id)
-
-    -- use up a bottle, a brick, correct amount of honey
+function consume_ingredients(menu_id) 
     api_slot_decr(api_get_slot(menu_id, 1)["id"])
     api_slot_decr(api_get_slot(menu_id, 2)["id"])
     api_sp(menu_id, "tank_amount", api_gp(menu_id, "tank_amount") - HONEY_REQUIRED)
 end
 
+function finish_cooking(menu_id)
+    produce_candy(menu_id)
+    candy_bench_reset(menu_id)
+    consume_ingredients(menu_id)
+end
+
+function start_cooking(menu_id)
+    api_create_counter("cooking_counter", 0.5, 0, 1, 1)
+    api_sp(menu_id, "cooking", true)
+end
+
 function is_cooking(menu_id)
-    return api_gp(menu_id, "cooking")
+    return api_gp(menu_id, "cooking") == true
 end
 
 function cook_button_click(menu_id)
@@ -269,7 +281,7 @@ function cook_button_click(menu_id)
         finish_cooking(menu_id)
     else
         if has_all_inputs(menu_id) then
-            api_sp(menu_id, "cooking", true)
+            start_cooking(menu_id)
         end
     end
 end
