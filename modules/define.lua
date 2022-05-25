@@ -34,9 +34,9 @@ function define_candy_bench()
             {"7. Candy Output", "RED"},
             {"8. Storage", "WHITE"}
         },
-        shop_key = false,
+        shop_key = true,
         shop_buy = 250,
-        shop_sell = 200,
+        shop_sell = 0,
         tools = { "mouse1", "hammer1" },
         placeable = true
     }, "sprites/candy_bench_item.png", "sprites/candy_bench_menu.png", {
