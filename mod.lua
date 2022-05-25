@@ -1,6 +1,6 @@
-DEV_MODE = true     -- Enable developer console or not
+DEV_MODE = false     -- Enable developer console or not
 HONEY_REQUIRED = 50  -- How much honey needed per candy
-TICK_RATE = 0.01    -- How much to tick every frame (0.01 = 10s per candy) 
+TICK_RATE = 0.001    -- How much to tick every frame (0.001 = 100s per candy) 
 
 function register()
     return {
@@ -182,7 +182,7 @@ function candy_bench_define(menu_id)
     table.insert(fields, "tank_amount")
     api_sp(menu_id, "_fields", fields)
 
-    api_define_tank(menu_id, 1000, 2000, "honey", 30, 39, "large")
+    api_define_tank(menu_id, 0, 2000, "honey", 30, 39, "large")
 end
 
 function candy_bench_change(menu_id)
