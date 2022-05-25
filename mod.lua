@@ -1,11 +1,8 @@
-DEV_MODE = true     -- Enable developer console or not
-HONEY_REQUIRED = 50  -- How much honey needed per candy
-TICK_RATE = 0.001    -- How much to tick every frame (0.001 = 100s per candy) 
-
 function register()
     return {
         name = "candy",
-        hooks = {"gui"}
+        hooks = {"gui"},
+        modules = {"define", "config"}
     }
 end
 
@@ -27,53 +24,36 @@ function gui()
     end
 end
 
-function define_candy_bench()
-    api_define_menu_object({
-        id = "candy_bench",
-        name = "Candy Bench",
-        category = "Tools",
-        tooltip = "Lets you make Apicandy",
-        layout = {
-            { 7, 17, "Input", { "bottle" } },
-            { 7, 40, "Input", { "sawdust2" } },
-            { 7, 63, "Liquid Input", { "canister1", "canister2" } },
-            { 76, 17, "Output" },
-            { 76, 40, "Output" },
-            { 76, 63, "Output" },
-            { 7, 90 }, { 30, 90 }, { 53, 90 }, { 76, 90 }
-        },
-        buttons = { "Help", "Target", "Close" },
-        info = {
-            {"1. Bottle Input", "GREEN"},
-            {"2. Sawdust Brick Input", "GREEN"},
-            {"3. Honey Canister Input", "GREEN"},
-            {"4. Honey Tank", "YELLOW"},
-            {"5. Cooking Gauge", "YELLOW"},
-            {"6. Cook Button", "RED"},
-            {"7. Candy Output", "RED"},
-            {"8. Storage", "WHITE"}
-        },
-        shop_key = false,
-        shop_buy = 250,
-        shop_sell = 200,
-        tools = { "mouse1", "hammer1" },
-        placeable = true
-    }, "sprites/candy_bench_item.png", "sprites/candy_bench_menu.png", {
-        define = "candy_bench_define",
-        draw = "candy_bench_draw",
-        change = "candy_bench_change",
-        tick = "candy_bench_tick"
-    },
-        "candy_bench_draw_obj")
+function init()
+    define_mod()
+    api_set_devmode(DEV_MODE)
 
-    local recipe = {
-        { item = "stone", amount = 20 }, 
-        { item = "barrel", amount = 1},
-        { item = "planks1", amount = 10}
-    }
-    api_define_recipe("crafting", "candy_candy_bench", recipe)
+    return "Success"
+end
 
-    api_create_counter("cooking_counter", 0.5, 0, 1, 1)
+function candy_bench_define(menu_id)
+    -- This will track whether the candymaking is in-progress or not
+    api_dp(menu_id, "cooking", false)
+
+    -- This will track the progress of candymaking
+    api_dp(menu_id, "p_start", 0)
+    api_dp(menu_id, "p_end", 1)
+
+    -- The button a user will press to start cooking
+    api_define_button(menu_id, "cook_button", 51, 61, "", "cook_button_click", "sprites/cook_button.png")
+
+    -- Save progress on game save
+    local fields = api_gp(menu_id, "_fields")
+    if fields == nil then
+        fields = {}
+    end
+    table.insert(fields, "p_start")
+    table.insert(fields, "p_end")
+    table.insert(fields, "cooking")
+    table.insert(fields, "tank_amount")
+    api_sp(menu_id, "_fields", fields)
+
+    api_define_tank(menu_id, 0, 2000, "honey", 30, 39, "large")
 end
 
 function candy_bench_draw_obj(obj_id)
@@ -112,80 +92,6 @@ function candy_bench_draw_obj(obj_id)
     end
 end
 
-function define_candy()
-    api_define_object({
-        id = "candy1",
-        name = "Apicandy",
-        category = "Beekeeping",
-        tooltip = "Sweet treats, courtesy of the bees",
-        shop_key = false,
-        shop_buy = 5,
-        shop_sell = 2,
-        placeable = false
-    }, "sprites/candy1_item.png")
-
-    api_define_object({
-        id = "candy2",
-        name = "Great Apicandy",
-        category = "Beekeeping",
-        tooltip = "High-quality sweet treats, courtesy of the bees",
-        shop_key = false,
-        shop_buy = 20,
-        shop_sell = 10,
-        placeable = false
-    }, "sprites/candy2_item.png")
-
-    api_define_object({
-        id = "candy3",
-        name = "Super Apicandy",
-        category = "Beekeeping",
-        tooltip = "The sweetest treats, courtesy of the bees",
-        shop_key = false,
-        shop_buy = 30,
-        shop_sell = 20,
-        placeable = false
-    }, "sprites/candy3_item.png")
-end
-
-function init()
-    define_candy_bench()
-    define_candy()
-    
-    api_define_sprite("cooking_button", "sprites/cooking_button.png", 2)
-    api_define_sprite("candy_bench_tooltip", "sprites/candy_bench_tooltip.png", 1)
-    api_define_sprite("candy_bench_cooking", "sprites/candy_bench_cooking.png", 4)
-    api_define_sprite("candy_warning", "sprites/candy_warning.png", 1)
-
-    api_set_devmode(DEV_MODE)
-
-    return "Success"
-end
-
-function candy_bench_define(menu_id)
-    -- This will track whether the candymaking is in-progress or not
-    api_dp(menu_id, "cooking", false)
-
-    -- This will track the progress of candymaking
-    api_dp(menu_id, "p_start", 0)
-    api_dp(menu_id, "p_end", 1)
-
-    -- The button a user will press to start cooking
-    api_define_button(menu_id, "cook_button", 51, 61, "", "cook_button_click", "sprites/cook_button.png")
-
-    -- Save progress on game save
-    local fields = api_gp(menu_id, "_fields")
-    if fields == nil then
-        fields = {}
-    end
-    table.insert(fields, "p_start")
-    table.insert(fields, "p_end")
-    table.insert(fields, "cooking")
-    table.insert(fields, "tank_amount")
-    api_sp(menu_id, "_fields", fields)
-
-    api_define_tank(menu_id, 0, 2000, "honey", 30, 39, "large")
-end
-
 function candy_bench_change(menu_id)
     -- Fill tank from slot 3
     in_slot = api_get_slot(menu_id, 3)
@@ -221,17 +127,17 @@ function get_gauge_pos_local(menu_id)
     -- The y position is the linear interpolation from the low_y to high_y by the current progress
     local y_pos = high_y - ((high_y - low_y) * api_gp(menu_id, "p_start"))
 
-    return { ["x"] = math.floor(x_pos), ["y"] = math.floor(y_pos) }
+    return { x = math.floor(x_pos), y = math.floor(y_pos) }
 end
 
--- Offset a local position inside a menu to a global position
-function local_pos_to_global(menu_id, local_pos)
-    local menu_inst = api_get_inst(menu_id)
+-- Offset a position relative to some object to a global position
+function local_pos_to_global(id, local_pos)
+    local menu_inst = api_get_inst(id)
     local cam = api_get_cam()
     local menu_x = menu_inst["x"] - cam["x"]
     local menu_y = menu_inst["y"] - cam["y"]
 
-    return { ["x"] = local_pos["x"] + menu_x, ["y"] = local_pos["y"] + menu_y }
+    return { x = local_pos["x"] + menu_x, y = local_pos["y"] + menu_y }
 end
 
 function candy_bench_draw(menu_id)
@@ -269,8 +175,9 @@ function candy_bench_reset(menu_id)
 end
 
 function consume_ingredients(menu_id) 
+    -- Consume 1 bottle, 5 sawdust, required amount of honey
     api_slot_decr(api_get_slot(menu_id, 1)["id"])
-    api_slot_decr(api_get_slot(menu_id, 2)["id"])
+    api_slot_decr(api_get_slot(menu_id, 2)["id"], 5)
     api_sp(menu_id, "tank_amount", api_gp(menu_id, "tank_amount") - HONEY_REQUIRED)
 end
 
