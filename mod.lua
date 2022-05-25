@@ -1,12 +1,30 @@
-DEV_MODE = false     -- Enable developer console or not
+DEV_MODE = true     -- Enable developer console or not
 HONEY_REQUIRED = 50  -- How much honey needed per candy
-TICK_RATE = 0.001    -- How much to tick every frame (0.01 = 10s per candy) 
+TICK_RATE = 0.01    -- How much to tick every frame (0.01 = 10s per candy) 
 
 function register()
     return {
         name = "candy",
-        hooks = {}
+        hooks = {"gui"}
     }
+end
+
+function gui()
+    -- Draw the progress line for the tooltip of highlighted candy benches
+    local obj_id = api_get_highlighted("menu_obj")
+    local inst = api_get_inst(obj_id)
+    if inst["oid"] == "candy_candy_bench" then    
+        local menu_id = inst["menu_id"]
+
+        if is_cooking(menu_id) then
+            local local_gauge_pos = get_gauge_pos_local(menu_id)
+            local gauge_pos = local_pos_to_global(obj_id, local_gauge_pos)
+            gauge_pos = { x = gauge_pos["x"] - 53, y = gauge_pos["y"] - 62}
+            local line_width = 10
+    
+            api_draw_line(gauge_pos["x"], gauge_pos["y"], gauge_pos["x"] + line_width, gauge_pos["y"])
+        end
+    end
 end
 
 function define_candy_bench()
@@ -45,7 +63,8 @@ function define_candy_bench()
         draw = "candy_bench_draw",
         change = "candy_bench_change",
         tick = "candy_bench_tick"
-    })
+    },
+        "candy_bench_draw_obj")
 
     local recipe = {
         { item = "stone", amount = 20 }, 
@@ -53,6 +72,21 @@ function define_candy_bench()
         { item = "planks1", amount = 10}
     }
     api_define_recipe("crafting", "candy_candy_bench", recipe)
+end
+
+function candy_bench_draw_obj(obj_id)
+    local bench_sprite = api_get_sprite("sp_candy_candy_bench")
+    local tooltip_sprite = api_get_sprite("sp_candy_bench_tooltip")
+
+    local inst = api_get_inst(obj_id)
+    local is_highlighted = api_get_highlighted("menu_obj") == obj_id
+
+    if is_highlighted then
+        api_draw_sprite(bench_sprite, 1, inst["x"], inst["y"])
+        api_draw_sprite(tooltip_sprite, 0, inst["x"]-2, inst["y"]-50)
+    else
+        api_draw_sprite(bench_sprite, 0, inst["x"], inst["y"])
+    end
 end
 
 function define_candy()
@@ -95,6 +129,8 @@ function init()
     define_candy()
     
     api_define_sprite("cooking_button", "sprites/cooking_button.png", 1)
+    api_define_sprite("candy_bench_tooltip", "sprites/candy_bench_tooltip.png", 1)
+
     api_set_devmode(DEV_MODE)
 
     return "Success"
@@ -178,6 +214,7 @@ function candy_bench_draw(menu_id)
         -- Draw a white line at the current gauge position
         local gauge_pos = local_pos_to_global(menu_id, get_gauge_pos_local(menu_id))
         local line_width = 10
+
         api_draw_line(gauge_pos["x"], gauge_pos["y"], gauge_pos["x"] + line_width, gauge_pos["y"])
     end
 end
@@ -191,7 +228,7 @@ function finish_cooking(menu_id)
     produce_candy(menu_id)
     candy_bench_reset(menu_id)
 
-    -- use up a bottle, a brick, 50bl honey
+    -- use up a bottle, a brick, correct amount of honey
     api_slot_decr(api_get_slot(menu_id, 1)["id"])
     api_slot_decr(api_get_slot(menu_id, 2)["id"])
     api_sp(menu_id, "tank_amount", api_gp(menu_id, "tank_amount") - HONEY_REQUIRED)
