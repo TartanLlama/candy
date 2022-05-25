@@ -1,4 +1,4 @@
-DEV_MODE = false     -- Enable developer console or not
+DEV_MODE = true     -- Enable developer console or not
 HONEY_REQUIRED = 50  -- How much honey needed per candy
 TICK_RATE = 0.001    -- How much to tick every frame (0.001 = 100s per candy) 
 
@@ -154,6 +154,7 @@ function init()
     api_define_sprite("cooking_button", "sprites/cooking_button.png", 2)
     api_define_sprite("candy_bench_tooltip", "sprites/candy_bench_tooltip.png", 1)
     api_define_sprite("candy_bench_cooking", "sprites/candy_bench_cooking.png", 4)
+    api_define_sprite("candy_warning", "sprites/candy_warning.png", 1)
 
     api_set_devmode(DEV_MODE)
 
@@ -197,14 +198,20 @@ function candy_bench_change(menu_id)
     end
 end
 
-function has_all_inputs(menu_id)
+function has_brick_and_sawdust(menu_id)
     local have_bottle = api_get_slot(menu_id, 1)["item"] == "bottle"
     local have_brick = api_get_slot(menu_id, 2)["item"] == "sawdust2"
-    local have_honey = api_gp(menu_id, "tank_amount") >= HONEY_REQUIRED
 
-    return have_bottle and have_brick and have_honey
+    return have_bottle and have_brick
 end
 
+function has_enough_honey(menu_id)
+    return api_gp(menu_id, "tank_amount") >= HONEY_REQUIRED
+end
+
+function has_all_inputs(menu_id)
+    return has_brick_and_sawdust(menu_id) and has_enough_honey(menu_id)
+end
 
 function get_gauge_pos_local(menu_id)
     local low_y = 18
@@ -231,10 +238,16 @@ function candy_bench_draw(menu_id)
     api_draw_tank(api_gp(menu_id, "tank_gui"))
     api_draw_button(api_gp(menu_id, "cook_button"), true)
 
+    -- Draw a warning if the only input missing is honey
+    if has_brick_and_sawdust(menu_id) and not has_enough_honey(menu_id) then
+        local warning_pos = local_pos_to_global(menu_id, {x = 0, y = 115})
+        api_draw_sprite(api_get_sprite("sp_candy_warning"), 0, warning_pos["x"], warning_pos["y"])
+    end
+
     if is_cooking(menu_id) then
         -- Make it look like the pot is cooking, how cute!
         local button_sprite = api_get_sprite("sp_cooking_button")
-        local sprite_pos = local_pos_to_global(menu_id, {["x"] = 51, ["y"] = 61})
+        local sprite_pos = local_pos_to_global(menu_id, {x = 51, y = 61})
 
         if api_get_counter("cooking_counter") == 0 then
             api_draw_sprite(button_sprite, 0, sprite_pos["x"], sprite_pos["y"])
