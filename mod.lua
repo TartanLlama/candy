@@ -72,20 +72,43 @@ function define_candy_bench()
         { item = "planks1", amount = 10}
     }
     api_define_recipe("crafting", "candy_candy_bench", recipe)
+
+    api_create_counter("cooking_counter", 0.5, 0, 1, 1)
 end
 
 function candy_bench_draw_obj(obj_id)
     local bench_sprite = api_get_sprite("sp_candy_candy_bench")
+    local cooking_sprite = api_get_sprite("sp_candy_bench_cooking")
     local tooltip_sprite = api_get_sprite("sp_candy_bench_tooltip")
 
     local inst = api_get_inst(obj_id)
     local is_highlighted = api_get_highlighted("menu_obj") == obj_id
 
+    -- Draw the relevant sprite and frame depending on whether we're 
+    -- highlighted and/or cooking
     if is_highlighted then
-        api_draw_sprite(bench_sprite, 1, inst["x"], inst["y"])
+        if is_cooking(inst["menu_id"]) then
+            if api_get_counter("cooking_counter") == 0 then
+                api_draw_sprite(cooking_sprite, 1, inst["x"], inst["y"])
+            else
+                api_draw_sprite(cooking_sprite, 3, inst["x"], inst["y"])
+            end
+        else
+            api_draw_sprite(bench_sprite, 1, inst["x"], inst["y"])
+        end
+
+        -- If we're highlighted, also draw the tooltip
         api_draw_sprite(tooltip_sprite, 0, inst["x"]-2, inst["y"]-50)
     else
-        api_draw_sprite(bench_sprite, 0, inst["x"], inst["y"])
+        if is_cooking(inst["menu_id"]) then 
+            if api_get_counter("cooking_counter") == 0 then
+                api_draw_sprite(cooking_sprite, 0, inst["x"], inst["y"])
+            else
+                api_draw_sprite(cooking_sprite, 2, inst["x"], inst["y"])
+            end
+        else
+            api_draw_sprite(bench_sprite, 0, inst["x"], inst["y"])
+        end
     end
 end
 
@@ -130,6 +153,7 @@ function init()
     
     api_define_sprite("cooking_button", "sprites/cooking_button.png", 1)
     api_define_sprite("candy_bench_tooltip", "sprites/candy_bench_tooltip.png", 1)
+    api_define_sprite("candy_bench_cooking", "sprites/candy_bench_cooking.png", 4)
 
     api_set_devmode(DEV_MODE)
 
@@ -154,6 +178,8 @@ function candy_bench_define(menu_id)
     end
     table.insert(fields, "p_start")
     table.insert(fields, "p_end")
+    table.insert(fields, "cooking")
+    table.insert(fields, "tank_amount")
     api_sp(menu_id, "_fields", fields)
 
     api_define_tank(menu_id, 1000, 2000, "honey", 30, 39, "large")
