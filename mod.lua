@@ -5,7 +5,6 @@ function register()
         modules = {"define", "config"}
     }
 end
-
 function gui()
     -- Draw the progress line for the tooltip of highlighted candy benches
     local obj_id = api_get_highlighted("menu_obj")
@@ -256,3 +255,14 @@ function candy_bench_tick(menu_id)
     end
 end
 
+function candy_bee_mutation_script(bee_a, bee_b, hive_id)
+    local slots = api_slot_match(hive_id, { "candy_candy3" })
+
+    local count = 0
+    for slot in slots do
+        count = count + api_get_inst(slot).count
+    end
+    
+    local chance = api_random(99) + 1
+    return count >= 5 and chance >= 60
+end
