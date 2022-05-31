@@ -8,6 +8,8 @@ end
 function gui()
     -- Draw the progress line for the tooltip of highlighted candy benches
     local obj_id = api_get_highlighted("menu_obj")
+    if obj_id == nil then return end
+    
     local inst = api_get_inst(obj_id)
     if inst["oid"] == "candy_candy_bench" then    
         local menu_id = inst["menu_id"]
