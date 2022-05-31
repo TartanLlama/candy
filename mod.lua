@@ -107,7 +107,7 @@ end
 
 function has_brick_and_sawdust(menu_id)
     local have_bottle = api_get_slot(menu_id, 1)["item"] == "bottle"
-    local have_brick = api_get_slot(menu_id, 2)["item"] == "sawdust2"
+    local have_brick = api_get_slot(menu_id, 2)["item"] == "sawdust2" and api_get_slot(menu_id, 2)["count"] >= 5
 
     return have_bottle and have_brick
 end
