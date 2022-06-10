@@ -47,7 +47,7 @@ function candy_bench_define(menu_id)
     local fields = {"p_start", "p_end", "working", "tank_amount", "tank_max", "tank_type"}
     api_sp(menu_id, "_fields", fields)
 
-    api_define_tank(menu_id, 1000, 2000, "honey", 30, 39, "large")
+    api_define_tank(menu_id, 0, 2000, "honey", 30, 39, "large")
 end
 
 function candy_bench_draw_obj(obj_id)
