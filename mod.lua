@@ -34,7 +34,7 @@ end
 
 function candy_bench_define(menu_id)
     -- This will track whether the candymaking is in-progress or not
-    api_dp(menu_id, "cooking", false)
+    api_dp(menu_id, "working", false)
 
     -- This will track the progress of candymaking
     api_dp(menu_id, "p_start", 0)
@@ -44,17 +44,10 @@ function candy_bench_define(menu_id)
     api_define_button(menu_id, "cook_button", 51, 61, "", "cook_button_click", "sprites/cook_button.png")
 
     -- Save progress on game save
-    local fields = api_gp(menu_id, "_fields")
-    if fields == nil then
-        fields = {}
-    end
-    table.insert(fields, "p_start")
-    table.insert(fields, "p_end")
-    table.insert(fields, "cooking")
-    table.insert(fields, "tank_amount")
+    local fields = {"p_start", "p_end", "working", "tank_amount", "tank_max", "tank_type"}
     api_sp(menu_id, "_fields", fields)
 
-    api_define_tank(menu_id, 0, 2000, "honey", 30, 39, "large")
+    api_define_tank(menu_id, 1000, 2000, "honey", 30, 39, "large")
 end
 
 function candy_bench_draw_obj(obj_id)
@@ -105,11 +98,12 @@ function candy_bench_change(menu_id)
     end
 end
 
-function has_brick_and_sawdust(menu_id)
-    local have_bottle = api_get_slot(menu_id, 1)["item"] == "bottle"
-    local have_brick = api_get_slot(menu_id, 2)["item"] == "sawdust2" and api_get_slot(menu_id, 2)["count"] >= 5
+function has_bottle(menu_id)
+    return api_get_slot(menu_id, 1)["item"] == "bottle"
+end
 
-    return have_bottle and have_brick
+function has_enough_brick(menu_id)
+    return api_get_slot(menu_id, 2)["item"] == "sawdust2" and api_get_slot(menu_id, 2)["count"] >= 5
 end
 
 function has_enough_honey(menu_id)
@@ -117,7 +111,7 @@ function has_enough_honey(menu_id)
 end
 
 function has_all_inputs(menu_id)
-    return has_brick_and_sawdust(menu_id) and has_enough_honey(menu_id)
+    return has_bottle(menu_id) and has_enough_brick(menu_id) and has_enough_honey(menu_id)
 end
 
 function get_gauge_pos_local(menu_id)
@@ -145,10 +139,15 @@ function candy_bench_draw(menu_id)
     api_draw_tank(api_gp(menu_id, "tank_gui"))
     api_draw_button(api_gp(menu_id, "cook_button"), true)
 
+    -- Draw a warning if there is some sawdust, but not enough
+    if api_get_slot(menu_id, 2)["item"] == "sawdust2" and not has_enough_brick(menu_id) then
+        api_sp(menu_id, "error", "You need at least 5 sawdust bricks to make candy")
     -- Draw a warning if the only input missing is honey
-    if has_brick_and_sawdust(menu_id) and not has_enough_honey(menu_id) then
-        local warning_pos = local_pos_to_global(menu_id, {x = 0, y = 115})
-        api_draw_sprite(api_get_sprite("sp_candy_warning"), 0, warning_pos["x"], warning_pos["y"])
+    elseif has_enough_brick(menu_id) and has_bottle(menu_id) and not has_enough_honey(menu_id) then
+        api_sp(menu_id, "error", "You need at least 50bl of honey to make candy")
+    -- Otherwise, clear the error
+    else
+        api_sp(menu_id, "error", "")
     end
 
     if is_cooking(menu_id) then
@@ -171,7 +170,7 @@ function candy_bench_draw(menu_id)
 end
 
 function candy_bench_reset(menu_id)
-    api_sp(menu_id, "cooking", false)
+    api_sp(menu_id, "working", false)
     api_sp(menu_id, "p_start", 0)
 end
 
@@ -190,11 +189,11 @@ end
 
 function start_cooking(menu_id)
     api_create_counter("cooking_counter", 0.5, 0, 1, 1)
-    api_sp(menu_id, "cooking", true)
+    api_sp(menu_id, "working", true)
 end
 
 function is_cooking(menu_id)
-    return api_gp(menu_id, "cooking") == true
+    return api_gp(menu_id, "working") == true
 end
 
 function cook_button_click(menu_id)
@@ -258,11 +257,12 @@ function candy_bench_tick(menu_id)
 end
 
 function candy_bee_mutation_script(bee_a, bee_b, hive_id)
-    local slots = api_slot_match(hive_id, { "candy_candy3" })
-
+    local slots = api_slot_match(api_gp(hive_id, "menu"), { "candy_candy3" })
+    if slots == nil then return false end
+    
     local count = 0
-    for slot in slots do
-        count = count + api_get_inst(slot).count
+    for _,slot in ipairs(slots) do
+        count = count + api_gp(slot, "count")
     end
     
     local chance = api_random(99) + 1

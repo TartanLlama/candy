@@ -134,6 +134,7 @@ function define_candy()
         tooltip = "Sweet treats, made solely by the bees",
         shop_key = false,
         shop_buy = 5,
-        shop_sell = 2
+        shop_sell = 2,
+        bee_lore = "Candy bees have such great love for sweet things, they have learned to make their own candy!"
     }, "sprites/candy4_item.png")
 end
